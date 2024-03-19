@@ -10,12 +10,13 @@ namespace ScopaBot
     {
         public int Value { get; }
         public string Suit { get; }
-        public int Primeri { get; }
+        public int Prime { get; }
 
-        public Card(int value, string suit)
+        public Card(int value, string suit,int prime)
         {
             Value = value;
             Suit = suit;
+            Prime = prime;
         }
     }
 }

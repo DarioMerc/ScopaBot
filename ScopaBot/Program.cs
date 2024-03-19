@@ -7,56 +7,69 @@ namespace ScopaBot
 {
     public class Program
     {
+        private static List<string> SUITS = new List<string> { "Swords", "Cups", "Coins", "Clubs" };
+        private static List<int> VALUES = new List<int> { 7, 6, 1, 5, 4, 3, 2, 8, 9, 10 };
+        private static List<int> PRIMES = new List<int> { 21, 18, 16, 15, 14, 13, 12, 10, 10, 10 };
+
         private static List<Card> deck;
+        private static List<Card> pot = new List<Card>();
+
         private static List<Card> playerHand = new List<Card>();
         private static List<Card> playerCollection = new List<Card>();
         private static int playerPoints = 0;
+        private static int playerScopas = 0;
+
         private static List<Card> botHand = new List<Card>();
         private static List<Card> botCollection = new List<Card>();
         private static int botPoints = 0;
-        private static List<Card> pot = new List<Card>();
+        private static int botScopas = 0;
+
+
         static void Main(string[] args)
         {
-                deck = GetShuffledDeck();
+            deck = GetShuffledDeck();
 
-                //Start Round
-                Console.WriteLine("Press any key to start the game...");
+            //Start Round
+            Console.WriteLine("Press any key to start the game...");
+            Console.ReadKey();
+            SetupPot();
+
+            while (deck.Any())
+            {
+                DealHands();
+                Console.WriteLine("\nCards have been dealt! Press any key to start hand!");
                 Console.ReadKey();
-                SetupPot();
-
-                while (deck.Any())
+                while (playerHand.Count > 0)
                 {
-                    DealHands();
-                    Console.WriteLine("\nCards have been dealt! Press any key to start hand!");
-                    Console.ReadKey();
-                    while (playerHand.Count > 0)
+                    Console.Clear();
+
+                    //Display pot
+                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                    Console.WriteLine("Pot:");
+                    Console.ResetColor();
+                    PrintPot(pot);
+
+                    Console.WriteLine("\n");
+
+                    //Player Turn
+                    PlayerTurn();
+
+                    //Bot Turn
+                    BotTurn();
+
+                    if (playerHand.Count != 0)
                     {
-                        Console.Clear();
 
-                        //Display pot
-                        Console.ForegroundColor = ConsoleColor.DarkYellow;
-                        Console.WriteLine("Pot:");
-                        Console.ResetColor();
-                        PrintPot(pot);
-
-                        Console.WriteLine("\n");
-
-                        //Player Turn
-                        PlayerTurn();
-
-                        //Bot Turn
-                        BotTurn();
-
-                        if(playerHand.Count != 0)
-                        {
-
-                            Console.WriteLine("\nPress any key to start your turn!");
-                            Console.ReadKey();
-                        }
+                        Console.WriteLine("\nPress any key to start your turn!");
+                        Console.ReadKey();
                     }
                 }
+            }
 
-                Endgame();
+            //Figure out who won
+            Console.Clear();
+            Console.WriteLine("\nEnd of game! Press any key to calculate score!");
+            CalculateScore();
         }
 
 
@@ -64,15 +77,15 @@ namespace ScopaBot
         //Game Setup
         static List<Card> GetShuffledDeck()
         {
-            List<string> suits = new List<string> { "Swords", "Cups", "Coins", "Clubs" };
-            List<int> values = new List<int> { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+
             List<Card> deck = new List<Card>();
 
-            foreach (var suit in suits)
+            foreach (var suit in SUITS)
             {
-                foreach (var value in values)
+                for (int i = 0; i < VALUES.Count; i++)
                 {
-                    deck.Add(new Card(value, suit));
+
+                    deck.Add(new Card(VALUES[i], suit, PRIMES[i]));
                 }
             }
 
@@ -101,17 +114,118 @@ namespace ScopaBot
 
 
         // End Game
-        public static void Endgame()
-        {
-            //Figure out who won
-            Console.WriteLine("\nEnd of game!");
-            Console.ReadLine();
-        }
         public static void CalculateScore()
         {
-            //Count Points
-        }
+            bool coinTie = false;
+            bool cardTie = false;
+            bool primeTie = false;
 
+            //Amount of cards
+            if (playerCollection.Count() > botCollection.Count())
+            {
+                playerPoints++;
+                Console.WriteLine("You have most cards.");
+            }
+            else if (playerCollection.Count < botCollection.Count())
+            {
+                botPoints++;
+                Console.WriteLine("Bot have most cards.");
+            }
+            else
+            {
+                Console.WriteLine("You and Bot have equal card. Tie!");
+                cardTie = true;
+            }
+
+            //Sette Bello
+            if (playerCollection.Any(card => card.Value == 7 && card.Suit == "Coins"))
+            {
+                Console.WriteLine("You got the Sette Bello.");
+                playerPoints++;
+            }
+            else
+            {
+                Console.WriteLine("Bot got the Sette Bello.");
+                botPoints++;
+            }
+
+            //Coins
+            if (playerCollection.Count(card => card.Suit == "Coins") > botCollection.Count(card => card.Suit == "Coins"))
+            {
+                Console.WriteLine("You have most coins.");
+                playerPoints++;
+            }
+            else if (playerCollection.Count(card => card.Suit == "Coins") < botCollection.Count(card => card.Suit == "Coins"))
+            {
+                Console.WriteLine("Bot has most coins.");
+                botPoints++;
+            }
+            else
+            {
+                Console.WriteLine("You and Bot have equal coins. Tie.");
+                coinTie = true;
+            }
+
+            // Prime
+            var playerPrime = getPrime(playerCollection);
+            var botPrime = getPrime(botCollection);
+
+            if (playerPrime > botPrime)
+            {
+                Console.WriteLine("You have a higher prime!");
+                playerPoints++;
+            }
+            else if (botPrime > playerPrime)
+            {
+                Console.WriteLine("Bot has a higher prime!");
+                botPoints--;
+            }
+            else
+            {
+                Console.WriteLine("You and Bot have an equal prime. Tie.");
+                primeTie = true;
+            }
+
+            Console.WriteLine($"You got {playerScopas} scopas.");
+            Console.WriteLine($"Bot got {botScopas} scopas.");
+
+
+            Console.WriteLine($"\nPlayer score: {playerPoints}");
+            Console.WriteLine($"Bot score: {botPoints}");
+
+            if (playerPoints > botPoints)
+            {
+                Console.WriteLine("\nPlayer Wins!");
+            }
+            else if (playerPoints < botPoints)
+            {
+                Console.WriteLine("\nBot Wins!");
+            }
+            else
+            {
+                Console.WriteLine("\nTie game!");
+            }
+
+        }
+        static int getPrime(List<Card> collection)
+        {
+            var prime = 0;
+            List<Card> primeCards = [];
+            foreach (string suit in SUITS)
+            {
+                foreach (var val in VALUES)
+                {
+                    if (collection.Any(card => card.Suit == suit && card.Value == val))
+                    {
+                        var card = collection.First(card => card.Suit == suit && card.Value == val);
+                        prime += card.Prime;
+                        primeCards.Add(card);
+                        break;
+                    }
+                }
+            }
+            return prime;
+        }
 
 
         // Turns
@@ -130,16 +244,16 @@ namespace ScopaBot
         }
         static void BotTurn()
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("\nBot turn!");
-            Console.ResetColor();
-
             Random rand = new Random();
             var playedCard = botHand[rand.Next(0, botHand.Count)];
             botHand.Remove(playedCard);
 
             var combinations = FindCombinations(pot, playedCard);
             var collection = new List<Card>();
+
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"\nBot played {playedCard.Value} of {playedCard.Suit}.");
+            Console.ResetColor();
 
             if (combinations.Any())
             {
@@ -161,7 +275,7 @@ namespace ScopaBot
                         pot.Remove(card);
                     }
                 }
-                Console.WriteLine($"Bot played {playedCard.Value} of {playedCard.Suit}.");
+
                 collection.Add(playedCard);
 
                 playerCollection.AddRange(collection);
@@ -171,7 +285,14 @@ namespace ScopaBot
             else
             {
                 pot.Add(playedCard);
-                Console.WriteLine($"Bot played {playedCard.Value} of {playedCard.Suit} and collected nothing.");
+                Console.WriteLine($"Bot collected nothing.");
+            }
+
+            //Scopa Check
+            if (!pot.Any())
+            {
+                botScopas++;
+                Console.WriteLine("Bot got a Scopa.");
             }
         }
         static void CalculateMove(Card playedCard)
@@ -223,7 +344,7 @@ namespace ScopaBot
             //Scopa Check
             if (!pot.Any())
             {
-                playerPoints++;
+                playerScopas++;
                 Console.WriteLine("You got a Scopa!");
             }
 
@@ -252,7 +373,7 @@ namespace ScopaBot
                 if (target.Value >= arr[i].Value)
                 {
                     currentCombination.Add(arr[i]);
-                    FindCombinationsHelper(arr, new Card(target.Value - arr[i].Value, target.Suit), i + 1, currentCombination, result);
+                    FindCombinationsHelper(arr, new Card(target.Value - arr[i].Value, target.Suit, target.Prime), i + 1, currentCombination, result);
                     currentCombination.RemoveAt(currentCombination.Count - 1);
                 }
             }
