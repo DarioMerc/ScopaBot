@@ -1,4 +1,4 @@
-# Scopa Bot (Still in progress!)
+# Scopa Bot
 
 A console version of the Italian card game "Scopa"
 
