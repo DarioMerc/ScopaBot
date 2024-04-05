@@ -37,6 +37,26 @@ namespace ScopaBot
             Console.ReadKey();
             SetupPot();
 
+
+            //for testing!
+                //while (true)
+                //{
+
+                //    DealHands();
+                //    while (botHand.Count > 0)
+                //    {
+                //        Console.Clear();
+
+                //        Console.WriteLine("Pot:");
+                //        PrintHelper.PrintPot(pot);
+
+                //        Console.WriteLine("\nBot Hand:");
+                //        PrintHelper.PrintPlayerHand(botHand);
+                //        BotTurn();
+                //    }
+                //}
+            //
+
             while (deck.Any())
             {
                 DealHands();
@@ -86,7 +106,7 @@ namespace ScopaBot
             // Figure out who won
             Console.Clear();
             Console.WriteLine("\nEnd of game!");
-            CalculateScore();
+            CalculatePoints();
 
             Console.ReadKey();
         }
@@ -133,7 +153,7 @@ namespace ScopaBot
 
 
         // End Game
-        public static void CalculateScore()
+        public static void CalculatePoints()
         {
             bool coinTie = false;
             bool primeTie = false;
@@ -199,15 +219,11 @@ namespace ScopaBot
 
             if (playerPoints > botPoints)
             {
-                Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine("\nPlayer wins!");
-                Console.ResetColor();
             }
             else if(botPoints > playerPoints)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("\nBot wins.");
-                Console.ResetColor();
             }
             else
             {
@@ -305,58 +321,149 @@ namespace ScopaBot
         }
         static void BotTurn()
         {
-            Random rand = new Random();
-            var playedCard = botHand[rand.Next(0, botHand.Count)];
-            botHand.Remove(playedCard);
+            List<List<List<Card>>> possibilities = new List<List<List<Card>>>();
 
-            var combinations = FindCombinations(pot, playedCard);
-            var collection = new List<Card>();
-
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"\nBot played {playedCard.Value} of {playedCard.Suit}.");
-            Console.ResetColor();
-
-            if (combinations.Any())
+            // Check combinations for every possible card that can be played
+            foreach (var playableCard in botHand)
             {
-                if (combinations.Count > 1)
-                {
+                var combos = FindCombinations(pot, playableCard);
+                possibilities.Add(combos);
+            }
 
-                    var selectedCombination = combinations[rand.Next(0, combinations.Count())];
-                    foreach (var card in selectedCombination)
+            List<Card> bestCombo = null;
+            Card bestCardToPlay = null;
+
+            // Evaluate possible plays
+            int bestScore = -1;
+            for (int i = 0; i < botHand.Count; i++)
+            {
+                var playableCard = botHand[i];
+                var combos = possibilities[i];
+
+                foreach (var combo in combos)
+                {
+                    var score = EvaluateCombo(combo, playableCard);
+
+                    if (score > bestScore)
                     {
-                        collection.Add(card);
-                        pot.Remove(card);
+                        bestScore = score;
+                        bestCombo = combo;
+                        bestCardToPlay = playableCard;
+                    }
+                }
+            }
+
+            if (bestCardToPlay != null && bestCombo != null)
+            {
+                botHand.Remove(bestCardToPlay);
+                foreach (var card in bestCombo)
+                {
+                    pot.Remove(card);
+                }
+                botCollection.Add(bestCardToPlay);
+                botCollection.AddRange(bestCombo);
+                playerLastCollection = false;
+
+                Console.Write($"\nBot played ");
+                PrintHelper.PrintCard(bestCardToPlay);
+                Console.Write(" and collected: \n");
+                PrintHelper.PrintPot(bestCombo);
+            }
+            else
+            {
+                Card bestCardToDrop = null;
+                if (botHand.Count > 1)
+                {
+                    int bestDropScore = 100;
+
+                    foreach (var droppableCard in botHand)
+                    {
+                        int score = EvaluateDrop(droppableCard);
+
+                        if(score < bestDropScore)
+                        {
+                            bestDropScore = score;
+                            bestCardToDrop = droppableCard;
+                        }
                     }
                 }
                 else
                 {
-                    foreach (var card in combinations[0])
-                    {
-                        collection.Add(card);
-                        pot.Remove(card);
-                    }
+                    bestCardToDrop = botHand[0];
                 }
 
-                collection.Add(playedCard);
-                botCollection.AddRange(collection);
-                playerLastCollection = false;
+                botHand.Remove(bestCardToDrop);
+                pot.Add(bestCardToDrop);
 
-                Console.WriteLine("Bot collected: ");
-                PrintHelper.PrintPot(collection);
-            }
-            else
-            {
-                pot.Add(playedCard);
-                Console.WriteLine($"Bot collected nothing.");
+                Console.Write($"\nBot played ");
+                PrintHelper.PrintCard(bestCardToDrop);
+                Console.Write(" and collected nothing.\n");
             }
 
             //Scopa Check
             if (!pot.Any())
             {
                 botScopas++;
-                Console.WriteLine("Bot got a Scopa.");
+                Console.WriteLine("\nBot got a Scopa.");
             }
         }
+        static int EvaluateDrop(Card droppableCard)
+        {
+            int score = 0;
+
+            var potWithDrop = new List<Card>(pot);
+
+            potWithDrop.Add(droppableCard);
+
+            var potential7Combos = FindCombinations(potWithDrop, new Card(7, "Coins", 21));
+            foreach(var combo in potential7Combos)
+            {
+                score--;
+            }
+
+            if(droppableCard.Suit == "Coin")
+            {
+                score--;
+            }
+
+            score += droppableCard.Value;
+            return score;
+        }
+        static int EvaluateCombo(List<Card> possibleCollection, Card playedCard)
+        {
+            int score = 0;
+
+            //Evaluate what could be picked up
+            foreach (var card in possibleCollection)
+            {
+                if (card.Suit == "Coins" && card.Value == 7)
+                {
+                    score++;
+                }
+                else if (card.Suit == "Coins")
+                {
+                    score++;
+                }
+                score++;
+                score += card.Prime;
+            }
+
+            //Evaluate what could be put down
+            if (playedCard.Suit == "Coins" && playedCard.Value == 7)
+            {
+                score++;
+            }
+            else if (playedCard.Suit == "Coins")
+            {
+                score++;
+            }
+            score++;
+            score += playedCard.Prime;
+
+
+            return score;
+        }
+
 
 
 

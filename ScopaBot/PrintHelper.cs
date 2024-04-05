@@ -8,11 +8,61 @@ namespace ScopaBot
 {
     internal static class PrintHelper
     {
+        public static void PrintCard(Card card)
+        {
+            if (card.Suit == "Coins")
+            {
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.Write($"{card.Value} of {card.Suit}");
+                Console.ResetColor();
+            }
+            if (card.Suit == "Clubs")
+            {
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.Write($"{card.Value} of {card.Suit}");
+                Console.ResetColor();
+            }
+            if (card.Suit == "Swords")
+            {
+                Console.ForegroundColor = ConsoleColor.DarkBlue;
+                Console.Write($"{card.Value} of {card.Suit}");
+                Console.ResetColor();
+            }
+            if (card.Suit == "Cups")
+            {
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.Write($"{card.Value} of {card.Suit}");
+                Console.ResetColor();
+            }
+        }
         public static void PrintPot(List<Card> hand)
         {
             foreach (var card in hand)
             {
-                Console.WriteLine($"{card.Value} of {card.Suit}");
+                if(card.Suit == "Coins")
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                    Console.WriteLine($"{card.Value} of {card.Suit}");
+                    Console.ResetColor();
+                }
+                if (card.Suit == "Clubs")
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGreen;
+                    Console.WriteLine($"{card.Value} of {card.Suit}");
+                    Console.ResetColor();
+                }
+                if (card.Suit == "Swords")
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkBlue;
+                    Console.WriteLine($"{card.Value} of {card.Suit}");
+                    Console.ResetColor();
+                }
+                if (card.Suit == "Cups")
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    Console.WriteLine($"{card.Value} of {card.Suit}");
+                    Console.ResetColor();
+                }
             }
         }
 
@@ -20,7 +70,9 @@ namespace ScopaBot
         {
             for (int i = 0; i < cards.Count; i++)
             {
-                Console.WriteLine($"{i + 1}) {cards[i].Value} of {cards[i].Suit}");
+                Console.Write($"{i + 1}) ");
+                PrintCard(cards[i]);
+                Console.Write("\n");
             }
         }
 
