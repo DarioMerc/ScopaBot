@@ -1,8 +1,7 @@
 # Scopa Bot
 
-A console version of the Italian card game "Scopa". 
-Played against a Bot!
+A console version of the Italian card game "Scopa" played against a Bot!
 
 TODO:
-- improve bot logic
+- continue improving bot skill
 - add input validation
